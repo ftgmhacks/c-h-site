@@ -1,54 +1,65 @@
-const chromium = require('@sparticuz/chromium');
-const puppeteer = require('puppeteer-core');
+const axios = require('axios');
+const CryptoJS = require('crypto-js');
 
 export default async function handler(req, res) {
     const { number } = req.query;
 
     if (!number) {
-        return res.status(400).json({ error: "Number missing! Example: ?number=923104882921" });
+        return res.status(400).json({ error: "Please provide a number." });
     }
 
-    let browser = null;
     try {
-        browser = await puppeteer.launch({
-            args: [...chromium.args, "--hide-scrollbars", "--disable-web-security"],
-            defaultViewport: chromium.defaultViewport,
-            executablePath: await chromium.executablePath(),
-            headless: chromium.headless,
-            ignoreHTTPSErrors: true,
+        const url = "https://xupdates.gt.tc/whatsapp-dp/";
+        
+        // 1. Pehle page se security tokens nikalna
+        const firstResponse = await axios.get(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/119.0.0.0 Safari/537.36' }
         });
 
-        const page = await browser.newPage();
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36');
+        const html = firstResponse.data;
 
-        // Website par jana
-        await page.goto('https://xupdates.gt.tc/whatsapp-dp/?i=1', {
-            waitUntil: 'networkidle2',
+        // Security values (a, b, c) extract karna
+        const aVal = html.match(/toNumbers\("([a-f0-9]+)"\)/g)[0].match(/"([a-f0-9]+)"/)[1];
+        const bVal = html.match(/toNumbers\("([a-f0-9]+)"\)/g)[1].match(/"([a-f0-9]+)"/)[1];
+        const cVal = html.match(/toNumbers\("([a-f0-9]+)"\)/g)[2].match(/"([a-f0-9]+)"/)[1];
+
+        // AES Challenge solve karke __test cookie banana
+        const key = CryptoJS.enc.Hex.parse(aVal);
+        const iv = CryptoJS.enc.Hex.parse(bVal);
+        const ciphertext = CryptoJS.enc.Hex.parse(cVal);
+
+        const decrypted = CryptoJS.AES.decrypt(
+            { ciphertext: ciphertext },
+            key,
+            { iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.NoPadding }
+        );
+
+        const testCookie = decrypted.toString(CryptoJS.enc.Hex);
+
+        // 2. Main API request bhejna Cookie ke saath
+        const apiResponse = await axios.post('https://xupdates.gt.tc/whatsapp-dp/api.php?action=fetch', 
+        { number: number }, 
+        {
+            headers: {
+                'Cookie': `__test=${testCookie}`,
+                'Content-Type': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/119.0.0.0 Safari/537.36',
+                'Referer': 'https://xupdates.gt.tc/whatsapp-dp/?i=1'
+            }
         });
 
-        // Browser ke andar fetch execute karna taki cookies bypass ho jayein
-        const result = await page.evaluate(async (targetNumber) => {
-            const response = await fetch('https://xupdates.gt.tc/whatsapp-dp/api.php?action=fetch', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ number: targetNumber })
-            });
-            return await response.json();
-        }, number);
-
-        if (result && result.success) {
-            const baseUrl = "https://xupdates.gt.tc";
+        if (apiResponse.data && apiResponse.data.success) {
+            const base = "https://xupdates.gt.tc";
             res.status(200).json({
                 success: true,
-                image_url: baseUrl + result.imageUrl,
-                download_url: baseUrl + result.downloadUrl
+                image_url: base + apiResponse.data.imageUrl,
+                download_url: base + apiResponse.data.downloadUrl
             });
         } else {
-            res.status(404).json({ success: false, message: "DP not found" });
+            res.status(404).json({ success: false, message: "Profile data not found." });
         }
+
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
-    } finally {
-        if (browser !== null) await browser.close();
     }
-    }
+}
